@@ -1,0 +1,304 @@
+{
+  "documents": [
+    {
+      "id": "hr-casual-leave",
+      "text": "Employees receive 12 casual leave days every calendar year. Unused casual leave does not carry forward to the next year.",
+      "metadata": {
+        "category": "hr-policy",
+        "department": "HR",
+        "documentType": "POLICY",
+        "source": "employee-handbook"
+      }
+    },
+    {
+      "id": "hr-emergency-leave",
+      "text": "Employees can take up to 5 days of emergency leave for urgent personal or family situations, such as a medical emergency or a death in the family.",
+      "metadata": {
+        "category": "hr-policy",
+        "department": "HR",
+        "documentType": "POLICY",
+        "source": "employee-handbook"
+      }
+    },
+    {
+      "id": "hr-sick-leave",
+      "text": "Sick leave longer than two consecutive working days requires a medical certificate from a registered doctor.",
+      "metadata": {
+        "category": "hr-policy",
+        "department": "HR",
+        "documentType": "POLICY",
+        "source": "employee-handbook"
+      }
+    },
+    {
+      "id": "hr-remote-work",
+      "text": "Staff may work from home up to two days per week with prior approval from their reporting manager.",
+      "metadata": {
+        "category": "hr-policy",
+        "department": "HR",
+        "documentType": "POLICY",
+        "source": "employee-handbook"
+      }
+    },
+    {
+      "id": "java-virtual-threads",
+      "text": "Virtual threads, final since Java 21, are lightweight threads scheduled by the JVM. They make it practical to run thousands of concurrent blocking tasks.",
+      "metadata": {
+        "category": "java",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "java-docs"
+      }
+    },
+    {
+      "id": "java-records",
+      "text": "A Java record is a concise class for immutable data. The compiler generates the constructor, accessor methods, equals, hashCode and toString.",
+      "metadata": {
+        "category": "java",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "java-docs"
+      }
+    },
+    {
+      "id": "java-interfaces",
+      "text": "A Java interface declares methods that implementing classes must provide. Since Java 8 an interface can also contain default methods with a body.",
+      "metadata": {
+        "category": "java",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "java-docs"
+      }
+    },
+    {
+      "id": "java-garbage-collection",
+      "text": "The JVM garbage collector automatically reclaims memory used by objects that are no longer reachable, so developers never free memory manually.",
+      "metadata": {
+        "category": "java",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "java-docs"
+      }
+    },
+    {
+      "id": "java-void-methods",
+      "text": "A Java method declared with the void return type does not return a value to its caller.",
+      "metadata": {
+        "category": "java",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "java-docs"
+      }
+    },
+    {
+      "id": "spring-dependency-injection",
+      "text": "Spring Boot provides dependency injection: the container creates objects and passes their dependencies through constructors instead of the objects creating them.",
+      "metadata": {
+        "category": "spring-boot",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "spring-docs"
+      }
+    },
+    {
+      "id": "spring-beans",
+      "text": "A Spring bean is an object whose lifecycle is managed by the Spring IoC container, from instantiation and wiring to destruction.",
+      "metadata": {
+        "category": "spring-boot",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "spring-docs"
+      }
+    },
+    {
+      "id": "spring-default-port",
+      "text": "A Spring Boot web application listens on port 8080 unless a different value is set with the server.port property.",
+      "metadata": {
+        "category": "spring-boot",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "spring-docs"
+      }
+    },
+    {
+      "id": "spring-actuator",
+      "text": "Spring Boot Actuator exposes operational endpoints such as /actuator/health and /actuator/metrics to monitor a running application.",
+      "metadata": {
+        "category": "spring-boot",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "spring-docs"
+      }
+    },
+    {
+      "id": "faq-password-reset",
+      "text": "To reset your password, click 'Forgot password' on the sign-in page and follow the link we email you. The link expires after 30 minutes.",
+      "metadata": {
+        "category": "support-faq",
+        "department": "SUPPORT",
+        "documentType": "FAQ",
+        "source": "help-center"
+      }
+    },
+    {
+      "id": "faq-returns",
+      "text": "Unused items can be returned within 30 days of delivery for a full refund to the original payment method.",
+      "metadata": {
+        "category": "support-faq",
+        "department": "SUPPORT",
+        "documentType": "FAQ",
+        "source": "help-center"
+      }
+    },
+    {
+      "id": "faq-leave-review",
+      "text": "Customers can leave a product review from the Orders page once the item has been delivered.",
+      "metadata": {
+        "category": "support-faq",
+        "department": "SUPPORT",
+        "documentType": "FAQ",
+        "source": "help-center"
+      }
+    },
+    {
+      "id": "faq-order-tracking",
+      "text": "Track your order with the tracking number included in the shipping confirmation email.",
+      "metadata": {
+        "category": "support-faq",
+        "department": "SUPPORT",
+        "documentType": "FAQ",
+        "source": "help-center"
+      }
+    },
+    {
+      "id": "faq-shipping-times",
+      "text": "Standard shipping takes 3 to 5 business days; express shipping arrives within 1 to 2 business days.",
+      "metadata": {
+        "category": "support-faq",
+        "department": "SUPPORT",
+        "documentType": "FAQ",
+        "source": "help-center"
+      }
+    },
+    {
+      "id": "product-coffee-beans",
+      "text": "Our single-origin Arabica coffee beans are roasted in small batches and packed in resealable 500 g bags.",
+      "metadata": {
+        "category": "product",
+        "department": "SALES",
+        "documentType": "PRODUCT_DESCRIPTION",
+        "source": "product-catalog"
+      }
+    },
+    {
+      "id": "product-bed-sheets",
+      "text": "Premium cotton bed sheets with a 400 thread count, available in queen and king sizes.",
+      "metadata": {
+        "category": "product",
+        "department": "SALES",
+        "documentType": "PRODUCT_DESCRIPTION",
+        "source": "product-catalog"
+      }
+    },
+    {
+      "id": "product-headphones",
+      "text": "Wireless over-ear headphones with active noise cancellation and up to 30 hours of battery life.",
+      "metadata": {
+        "category": "product",
+        "department": "SALES",
+        "documentType": "PRODUCT_DESCRIPTION",
+        "source": "product-catalog"
+      }
+    },
+    {
+      "id": "product-standing-desk",
+      "text": "Electric standing desk with height adjustable from 70 to 120 cm and a keypad that remembers four positions.",
+      "metadata": {
+        "category": "product",
+        "department": "SALES",
+        "documentType": "PRODUCT_DESCRIPTION",
+        "source": "product-catalog"
+      }
+    },
+    {
+      "id": "loan-eligibility",
+      "text": "Applicants for a personal loan must be at least 21 years old and earn a minimum monthly income of 25,000 INR.",
+      "metadata": {
+        "category": "loan-policy",
+        "department": "LENDING",
+        "documentType": "POLICY",
+        "source": "lending-policy"
+      }
+    },
+    {
+      "id": "loan-prepayment",
+      "text": "Borrowers may repay a personal loan before the end of its term. No prepayment penalty applies after the first 12 EMIs have been paid.",
+      "metadata": {
+        "category": "loan-policy",
+        "department": "LENDING",
+        "documentType": "POLICY",
+        "source": "lending-policy"
+      }
+    },
+    {
+      "id": "loan-default",
+      "text": "If a borrower misses three consecutive EMI payments, the loan is classified as in default and reported to credit bureaus.",
+      "metadata": {
+        "category": "loan-policy",
+        "department": "LENDING",
+        "documentType": "POLICY",
+        "source": "lending-policy"
+      }
+    },
+    {
+      "id": "loan-interest-rates",
+      "text": "Personal loan interest rates range from 10.5% to 16% per year depending on the applicant's credit score.",
+      "metadata": {
+        "category": "loan-policy",
+        "department": "LENDING",
+        "documentType": "POLICY",
+        "source": "lending-policy"
+      }
+    },
+    {
+      "id": "tech-docker-healthcheck",
+      "text": "A Docker Compose health check runs a command inside the container at an interval; dependent services can wait until the container reports healthy.",
+      "metadata": {
+        "category": "tech-docs",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "platform-wiki"
+      }
+    },
+    {
+      "id": "tech-postgres-btree-index",
+      "text": "A B-tree index in PostgreSQL speeds up equality and range queries on a column but adds overhead to every insert and update.",
+      "metadata": {
+        "category": "tech-docs",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "platform-wiki"
+      }
+    },
+    {
+      "id": "tech-http-429",
+      "text": "HTTP status 429 Too Many Requests means the client exceeded the rate limit and should retry after the delay given in the Retry-After header.",
+      "metadata": {
+        "category": "tech-docs",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "platform-wiki"
+      }
+    },
+    {
+      "id": "tech-idempotency",
+      "text": "An idempotent REST operation has the same effect whether it is called once or many times, which makes automatic retries safe.",
+      "metadata": {
+        "category": "tech-docs",
+        "department": "ENGINEERING",
+        "documentType": "DOCUMENTATION",
+        "source": "platform-wiki"
+      }
+    }
+  ]
+}

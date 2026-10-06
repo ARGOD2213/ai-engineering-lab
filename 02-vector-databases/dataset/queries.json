@@ -1,0 +1,136 @@
+{
+  "queries": [
+    {
+      "id": "q01",
+      "query": "How many emergency leave days can an employee take?",
+      "expected": "hr-emergency-leave",
+      "challenge": "DIRECT",
+      "note": "Shares many words with the answer. Both keyword and vector search should find it."
+    },
+    {
+      "id": "q02",
+      "query": "How much time off do I get when a close relative suddenly passes away?",
+      "expected": "hr-emergency-leave",
+      "challenge": "PARAPHRASE",
+      "note": "Almost no shared words: 'time off' vs 'leave', 'relative passes away' vs 'death in the family'."
+    },
+    {
+      "id": "q03",
+      "query": "Can I send back something I bought last week?",
+      "expected": "faq-returns",
+      "challenge": "PARAPHRASE",
+      "note": "'send back' / 'bought' vs 'returned' / 'delivery'."
+    },
+    {
+      "id": "q04",
+      "query": "How do I leave feedback on something I purchased?",
+      "expected": "faq-leave-review",
+      "challenge": "KEYWORD_TRAP",
+      "keywordTrap": [
+        "hr-casual-leave",
+        "hr-emergency-leave",
+        "hr-sick-leave"
+      ],
+      "note": "'leave' is a verb here; the HR documents use 'leave' as a noun (time off)."
+    },
+    {
+      "id": "q05",
+      "query": "How are beans managed in a Spring application?",
+      "expected": "spring-beans",
+      "challenge": "KEYWORD_TRAP",
+      "keywordTrap": [
+        "product-coffee-beans"
+      ],
+      "note": "'beans' also appears in the coffee product description."
+    },
+    {
+      "id": "q06",
+      "query": "Which coffee should I buy for my morning espresso?",
+      "expected": "product-coffee-beans",
+      "challenge": "PARAPHRASE",
+      "note": "Mirror of q05: the coffee meaning of 'beans'."
+    },
+    {
+      "id": "q07",
+      "query": "How do lightweight threads help a server handle many concurrent requests?",
+      "expected": "java-virtual-threads",
+      "challenge": "KEYWORD_TRAP",
+      "keywordTrap": [
+        "product-bed-sheets"
+      ],
+      "note": "'thread' also appears in 'thread count' of bed sheets."
+    },
+    {
+      "id": "q08",
+      "query": "What is the thread count of the bedding?",
+      "expected": "product-bed-sheets",
+      "challenge": "KEYWORD_TRAP",
+      "keywordTrap": [
+        "java-virtual-threads"
+      ],
+      "note": "Mirror of q07: 'bedding' never appears in the document ('bed sheets')."
+    },
+    {
+      "id": "q09",
+      "query": "What happens if a borrower stops paying their instalments?",
+      "expected": "loan-default",
+      "challenge": "PARAPHRASE",
+      "note": "'stops paying instalments' vs 'misses EMI payments'."
+    },
+    {
+      "id": "q10",
+      "query": "Which port does a Spring Boot app listen on if I don't configure one?",
+      "expected": "spring-default-port",
+      "challenge": "DIRECT",
+      "note": ""
+    },
+    {
+      "id": "q11",
+      "query": "Can I close my loan early without paying a fee?",
+      "expected": "loan-prepayment",
+      "challenge": "PARAPHRASE",
+      "note": "'close early' / 'fee' vs 'repay before the end of its term' / 'penalty'."
+    },
+    {
+      "id": "q12",
+      "query": "How can I check that my running service is healthy?",
+      "expected": "spring-actuator",
+      "challenge": "AMBIGUOUS",
+      "alsoRelevant": [
+        "tech-docker-healthcheck"
+      ],
+      "note": "Two documents are legitimately relevant; either at rank 1 is acceptable."
+    },
+    {
+      "id": "q13",
+      "query": "The API keeps rejecting my calls because I'm sending too many",
+      "expected": "tech-http-429",
+      "challenge": "PARAPHRASE",
+      "note": "No mention of '429' or 'rate limit' in the query."
+    },
+    {
+      "id": "q14",
+      "query": "Is it safe to retry a request that may have already succeeded?",
+      "expected": "tech-idempotency",
+      "challenge": "PARAPHRASE",
+      "note": ""
+    },
+    {
+      "id": "q15",
+      "query": "Can I return a product if I no longer want it?",
+      "expected": "faq-returns",
+      "challenge": "KEYWORD_TRAP",
+      "keywordTrap": [
+        "java-void-methods"
+      ],
+      "note": "The Java document contains the exact word 'return'; the refund FAQ says 'returned'. Exact-word matching prefers the wrong one."
+    },
+    {
+      "id": "q16",
+      "query": "I forgot my login credentials",
+      "expected": "faq-password-reset",
+      "challenge": "PARAPHRASE",
+      "note": "'login credentials' vs 'password', 'sign-in'."
+    }
+  ]
+}
