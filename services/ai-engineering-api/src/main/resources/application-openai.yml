@@ -1,0 +1,33 @@
+# =============================================================================
+# Opt-in profile: OpenAI text-embedding-3-small
+# Activate with EMBEDDING_PROVIDER=openai and provide OPENAI_API_KEY (never commit it).
+#
+# What changes compared to the local model:
+#   - a different EmbeddingModel bean (Spring AI picks it from spring.ai.model.embedding)
+#   - 1536 dimensions instead of 384
+#   - a different table: vectors from different models live in different "meaning spaces"
+#     and cannot be compared, so documents must be re-embedded into this table.
+# What does NOT change: controllers, services, VectorStore code, the SQL distance operator.
+#
+# Cost note: at startup EmbeddingDimensionVerifier embeds one short probe text (a few tokens, a tiny
+# fraction of a cent) to measure the real vector size and to fail fast on a missing or invalid key.
+# Set lab.embedding.verify-dimensions-on-startup=false to skip it.
+# =============================================================================
+spring:
+  ai:
+    model:
+      embedding: openai
+    openai:
+      # Resolved from the environment or .env. Startup fails fast if it is missing.
+      api-key: ${OPENAI_API_KEY:}
+      embedding:
+        model: text-embedding-3-small
+    vectorstore:
+      pgvector:
+        table-name: documents_openai_text_embedding_3_small
+
+lab:
+  embedding:
+    provider: openai
+    model: text-embedding-3-small
+    dimensions: 1536

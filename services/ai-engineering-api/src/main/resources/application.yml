@@ -1,0 +1,99 @@
+# =============================================================================
+# ai-engineering-api - milestone 1: embeddings + pgvector semantic search
+#
+# Default profile = local embedding model (no API key, no cost).
+# Set EMBEDDING_PROVIDER=openai (and OPENAI_API_KEY) to use application-openai.yml.
+# =============================================================================
+spring:
+  application:
+    name: ai-engineering-api
+  config:
+    # Local-development convenience: read KEY=value pairs from the repository's .env file
+    # (works whether you start from the repo root or from services/ai-engineering-api).
+    # Real environment variables always win over values from .env.
+    import: "optional:file:.env[.properties],optional:file:../../.env[.properties]"
+  profiles:
+    active: ${EMBEDDING_PROVIDER:local}
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5433}/${POSTGRES_DB:ai_lab}
+    username: ${POSTGRES_USER:ai_lab}
+    # No default password on purpose: credentials come from the environment (.env locally).
+    password: ${POSTGRES_PASSWORD:}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 5000 # milliseconds
+
+  flyway:
+    # Versioned SQL in src/main/resources/db/migration owns the schema (extension, tables, indexes).
+    enabled: true
+
+  ai:
+    model:
+      # Exactly one embedding model is active. "transformers" = local ONNX model inside the JVM.
+      embedding: transformers
+      # Developer note: the LLM is intentionally absent in milestone 1. These starters are on the
+      # classpath only because the OpenAI starter bundles them; "none" guarantees no chat/image/audio
+      # model bean is ever created.
+      chat: none
+      image: none
+      audio:
+        speech: none
+        transcription: none
+      moderation: none
+
+    embedding:
+      transformer:
+        cache:
+          # Spring AI's default is a NEW temp directory per JVM start, which would re-download the
+          # ~90 MB model on every restart. Use a stable directory instead.
+          directory: ${EMBEDDING_MODEL_CACHE_DIR:${user.home}/.cache/ai-engineering-lab/onnx}
+
+    vectorstore:
+      pgvector:
+        # Flyway creates the table; Spring AI only validates that it matches.
+        initialize-schema: false
+        schema-validation: true
+        schema-name: public
+        # One table per embedding model. Never mix vectors from different models in one table.
+        table-name: documents_minilm_l6_v2
+        dimensions: ${lab.embedding.dimensions}
+        # Cosine distance (<=>): compares direction, ignores vector length. Safe default for text.
+        distance-type: COSINE_DISTANCE
+        index-type: HNSW
+        # TEXT ids allow readable ids such as "hr-emergency-leave" in the sample dataset.
+        id-type: TEXT
+      observations:
+        # Never put query text / documents into traces or logs.
+        log-query-response: false
+
+lab:
+  embedding:
+    provider: transformers-onnx (local, in-process)
+    model: sentence-transformers/all-MiniLM-L6-v2
+    dimensions: 384
+    verify-dimensions-on-startup: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-stacktrace: never
+    include-message: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      # Local development convenience. In production use "when-authorized".
+      show-details: always
+  info:
+    java:
+      enabled: true
+
+logging:
+  level:
+    com.aiengineeringlab: INFO
+    org.springframework.ai: INFO
