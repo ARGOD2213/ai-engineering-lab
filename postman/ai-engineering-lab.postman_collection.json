@@ -1,0 +1,536 @@
+{
+  "info": {
+    "name": "AI Engineering Lab - Milestone 1 (embeddings + pgvector)",
+    "description": "Requests for services/ai-engineering-api. Start PostgreSQL (docker compose up -d) and the service first. No LLM is involved.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Embeddings",
+      "item": [
+        {
+          "name": "Generate embedding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/embeddings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "embeddings"
+              ]
+            },
+            "description": "Text in, vector out. Nothing is stored. 'dimensions' is the real length returned by the model.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Employees are entitled to 12 casual leave days per year.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('dimensions equals vector length', () => pm.expect(body.embedding.length).to.eql(body.dimensions));",
+                  "console.log(`model=${body.model} dimensions=${body.dimensions}`);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Compare texts (same vs different meaning)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/embeddings/similarity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "embeddings",
+                "similarity"
+              ]
+            },
+            "description": "Cosine similarity and naive keyword overlap for every pair.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"texts\": [\n    \"Employees receive 12 casual leave days every year.\",\n    \"Workers are entitled to twelve days of casual leave annually.\",\n    \"Spring Boot provides dependency injection.\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const pairs = pm.response.json().pairs;",
+                  "pm.test('A-B is the most similar pair', () => { pm.expect(pairs[0].first).to.eql('A'); pm.expect(pairs[0].second).to.eql('B'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Documents",
+      "item": [
+        {
+          "name": "Insert document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents"
+              ]
+            },
+            "description": "REST -> validation -> embedding model -> pgvector. Returns the row read back from PostgreSQL.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Employees can take up to 5 days of emergency leave.\",\n  \"metadata\": {\n    \"department\": \"HR\",\n    \"documentType\": \"POLICY\",\n    \"source\": \"employee-handbook\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('documentId', body.id);",
+                  "pm.test('vector stored', () => pm.expect(body.embeddingDimensions).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get document (with stored vector)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/{{documentId}}?includeEmbedding=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}"
+              ],
+              "query": [
+                {
+                  "key": "includeEmbedding",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Reads the row directly from the vector table, including vector_dims(embedding) and created_at."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('vector length matches', () => pm.expect(body.embedding.length).to.eql(body.embeddingDimensions));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Insert batch (sample)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "batch"
+              ]
+            },
+            "description": "For the full 30-document dataset use 02-vector-databases/scripts/load-dataset.sh (or paste 02-vector-databases/dataset/documents.json as the body).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documents\": [\n    {\n      \"id\": \"hr-casual-leave\",\n      \"text\": \"Employees receive 12 casual leave days every calendar year. Unused casual leave does not carry forward to the next year.\",\n      \"metadata\": {\n        \"category\": \"hr-policy\",\n        \"department\": \"HR\",\n        \"documentType\": \"POLICY\",\n        \"source\": \"employee-handbook\"\n      }\n    },\n    {\n      \"id\": \"faq-leave-review\",\n      \"text\": \"Customers can leave a product review from the Orders page once the item has been delivered.\",\n      \"metadata\": {\n        \"category\": \"support-faq\",\n        \"department\": \"SUPPORT\",\n        \"documentType\": \"FAQ\",\n        \"source\": \"help-center\"\n      }\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Validation error example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents"
+              ]
+            },
+            "description": "Blank text is rejected before any model call.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Search",
+      "item": [
+        {
+          "name": "Search documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ]
+            },
+            "description": "Question -> embedding -> pgvector similarity search -> top-K. No LLM.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"How many emergency leave days can an employee take?\",\n  \"topK\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json().results;",
+                  "pm.test('ranked by score', () => { for (let i = 1; i < r.length; i++) pm.expect(r[i-1].score).to.be.at.least(r[i].score); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search: paraphrase (no shared keywords)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ]
+            },
+            "description": "Expected first result: hr-emergency-leave (load the dataset first).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"How much time off do I get when a close relative suddenly passes away?\",\n  \"topK\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Search with metadata filter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ]
+            },
+            "description": "Spring AI portable filter syntax, translated to a jsonpath predicate on the JSONB metadata column.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"leave\",\n  \"topK\": 5,\n  \"filterExpression\": \"department == 'HR'\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Search with similarity threshold",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "search"
+              ]
+            },
+            "description": "Drops results whose cosine similarity is below 0.4.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Can I send back something I bought last week?\",\n  \"topK\": 5,\n  \"similarityThreshold\": 0.4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Operations",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Info (model + vector table)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "info"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Metric: embedding latency",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/metrics/gen_ai.client.operation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "metrics",
+                "gen_ai.client.operation"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Metric: vector store latency",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/metrics/db.vector.client.operation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "metrics",
+                "db.vector.client.operation"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Metric: search result count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/metrics/lab.search.results",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "metrics",
+                "lab.search.results"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# Test profile: no real embedding model is created (no download, no API key, no cost).
+# FakeEmbeddingModelConfiguration contributes a deterministic HashingEmbeddingModel instead.
+spring:
+  ai:
+    model:
+      embedding: none
+
+lab:
+  embedding:
+    provider: fake-hashing (tests only)
+    model: test-hashing-embedding
+    dimensions: 384

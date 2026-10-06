@@ -1,0 +1,56 @@
+### AI Engineering Lab - HTTP requests (IntelliJ HTTP Client / VS Code REST Client)
+### Postman users: import postman/ai-engineering-lab.postman_collection.json
+
+@baseUrl = http://localhost:8080
+
+### 1. Generate an embedding (nothing is stored)
+POST {{baseUrl}}/api/embeddings
+Content-Type: application/json
+
+{"text": "Employees are entitled to 12 casual leave days per year."}
+
+### 2. Same meaning vs. different meaning
+POST {{baseUrl}}/api/embeddings/similarity
+Content-Type: application/json
+
+{
+  "texts": [
+    "Employees receive 12 casual leave days every year.",
+    "Workers are entitled to twelve days of casual leave annually.",
+    "Spring Boot provides dependency injection."
+  ]
+}
+
+### 3. Insert a document
+POST {{baseUrl}}/api/documents
+Content-Type: application/json
+
+{
+  "id": "hr-emergency-leave-example",
+  "text": "Employees can take up to 5 days of emergency leave.",
+  "metadata": {"department": "HR", "documentType": "POLICY", "source": "employee-handbook"}
+}
+
+### 4. Read it back, including the vector stored in pgvector
+GET {{baseUrl}}/api/documents/hr-emergency-leave-example?includeEmbedding=true
+
+### 5. Load the 30-document sample dataset
+POST {{baseUrl}}/api/documents/batch
+Content-Type: application/json
+
+< ../../02-vector-databases/dataset/documents.json
+
+### 6. Semantic search
+POST {{baseUrl}}/api/search
+Content-Type: application/json
+
+{"query": "How many emergency leave days can an employee take?", "topK": 5}
+
+### 7. Semantic search with a metadata filter
+POST {{baseUrl}}/api/search
+Content-Type: application/json
+
+{"query": "How much time off do I get when a close relative passes away?", "topK": 3, "filterExpression": "department == 'HR'"}
+
+### 8. Model and vector table in use
+GET {{baseUrl}}/actuator/info
