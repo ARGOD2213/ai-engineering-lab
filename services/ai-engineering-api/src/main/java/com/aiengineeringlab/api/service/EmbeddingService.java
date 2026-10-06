@@ -2,7 +2,13 @@ package com.aiengineeringlab.api.service;
 
 import com.aiengineeringlab.api.configuration.EmbeddingProperties;
 import com.aiengineeringlab.api.domain.EmbeddingResult;
+import com.aiengineeringlab.api.domain.SimilarityReport;
+import com.aiengineeringlab.api.domain.SimilarityReport.LabeledText;
+import com.aiengineeringlab.api.domain.SimilarityReport.SimilarityPair;
 import com.aiengineeringlab.api.exception.EmbeddingProviderException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +44,34 @@ public class EmbeddingService {
         return new EmbeddingResult(text, properties.model(), embedding.length, embedding);
     }
 
+    /**
+     * Embeds all texts in one batched call and compares every pair. No LLM is involved: the
+     * similarity comes purely from the geometry of the vectors.
+     */
+    public SimilarityReport compare(List<String> texts) {
+        long start = System.nanoTime();
+        List<float[]> embeddings = callProvider(() -> embeddingModel.embed(texts));
+
+        List<LabeledText> labeled = new ArrayList<>();
+        for (int i = 0; i < texts.size(); i++) {
+            labeled.add(new LabeledText(label(i), texts.get(i)));
+        }
+
+        List<SimilarityPair> pairs = new ArrayList<>();
+        for (int i = 0; i < texts.size(); i++) {
+            for (int j = i + 1; j < texts.size(); j++) {
+                pairs.add(new SimilarityPair(label(i), label(j),
+                        round(TextSimilarity.cosineSimilarity(embeddings.get(i), embeddings.get(j))),
+                        round(TextSimilarity.keywordOverlap(texts.get(i), texts.get(j)))));
+            }
+        }
+        pairs.sort(Comparator.comparingDouble(SimilarityPair::cosineSimilarity).reversed());
+
+        int dimensions = embeddings.getFirst().length;
+        log.info("Compared texts: count={} dimensions={} latencyMs={}", texts.size(), dimensions, elapsedMs(start));
+        return new SimilarityReport(properties.model(), dimensions, labeled, pairs);
+    }
+
     private <T> T callProvider(Supplier<T> call) {
         try {
             return call.get();
@@ -45,6 +79,14 @@ public class EmbeddingService {
         catch (RuntimeException ex) {
             throw new EmbeddingProviderException("Embedding model '%s' failed".formatted(properties.model()), ex);
         }
+    }
+
+    private static String label(int index) {
+        return index < 26 ? String.valueOf((char) ('A' + index)) : "T" + (index + 1);
+    }
+
+    private static double round(double value) {
+        return Math.round(value * 10_000d) / 10_000d;
     }
 
     private static long elapsedMs(long startNanos) {

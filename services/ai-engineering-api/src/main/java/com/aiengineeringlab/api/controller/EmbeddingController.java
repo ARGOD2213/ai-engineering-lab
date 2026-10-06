@@ -1,7 +1,9 @@
 package com.aiengineeringlab.api.controller;
 
 import com.aiengineeringlab.api.controller.dto.EmbeddingRequest;
+import com.aiengineeringlab.api.controller.dto.SimilarityRequest;
 import com.aiengineeringlab.api.domain.EmbeddingResult;
+import com.aiengineeringlab.api.domain.SimilarityReport;
 import com.aiengineeringlab.api.service.EmbeddingService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,5 +26,11 @@ public class EmbeddingController {
     @PostMapping
     public EmbeddingResult embed(@Valid @RequestBody EmbeddingRequest request) {
         return embeddingService.embed(request.text());
+    }
+
+    /** Embeds 2-10 texts and returns the cosine similarity (and keyword overlap) of every pair. */
+    @PostMapping("/similarity")
+    public SimilarityReport similarity(@Valid @RequestBody SimilarityRequest request) {
+        return embeddingService.compare(request.texts());
     }
 }
