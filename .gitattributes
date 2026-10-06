@@ -1,0 +1,6 @@
+# Normalize line endings so scripts work on Linux/macOS even when cloned on Windows.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.jar binary
+*.png binary

@@ -1,0 +1,38 @@
+# --- Secrets: never commit real credentials ---------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+secrets/
+
+# --- Java / Maven -----------------------------------------------------------
+target/
+!.mvn/wrapper/maven-wrapper.jar
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# --- IDEs -------------------------------------------------------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+out/
+
+# --- OS ---------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# --- Local model caches (downloaded at runtime, ~90 MB) ---------------------
+.cache/
+*.onnx
