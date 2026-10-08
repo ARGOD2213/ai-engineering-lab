@@ -31,7 +31,7 @@ The LLM is intentionally absent. See [why](01-embeddings/notes/developer-notes.m
 
 ## Quick start
 
-Prerequisites: **Java 21**, **Docker** (with Compose v2), **Git**. Maven is not required (wrapper included). No API key is needed.
+Prerequisites: **Java 25**, **Docker** (with Compose v2), **Git**. Maven is not required (wrapper included). No API key is needed.
 
 ```bash
 git clone https://github.com/ARGOD2213/ai-engineering-lab.git

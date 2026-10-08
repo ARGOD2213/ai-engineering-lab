@@ -18,7 +18,7 @@
     <description>AI Engineering Lab - milestone 1: embeddings + pgvector semantic search</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <!-- Spring AI 2.0.1 is built and tested against Spring Boot 4.1.1. Upgrade them together. -->
         <spring-ai.version>2.0.1</spring-ai.version>
     </properties>

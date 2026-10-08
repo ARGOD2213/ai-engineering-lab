@@ -20,7 +20,7 @@ flowchart LR
 flowchart TB
     client["Client<br/>(curl, Postman, tests)"]
 
-    subgraph app["ai-engineering-api (Spring Boot 4.1, Java 21)"]
+    subgraph app["ai-engineering-api (Spring Boot 4.1, Java 25)"]
         direction TB
         controllers["Controllers<br/>EmbeddingController · DocumentController · SearchController"]
         services["Services<br/>EmbeddingService · DocumentIngestionService · SemanticSearchService"]

@@ -36,3 +36,6 @@ Thumbs.db
 # --- Local model caches (downloaded at runtime, ~90 MB) ---------------------
 .cache/
 *.onnx
+
+
+CLAUDE.md
