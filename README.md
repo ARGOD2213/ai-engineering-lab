@@ -95,11 +95,13 @@ ai-engineering-lab/
 │   └── chroma/ qdrant/ redis/   milestone 2 (planned)
 ├── 03-rag/ 04-ai-agents/ 05-mcp/    future milestones (intentionally empty)
 ├── docs/
+│   ├── aws-deployment/          AWS deployment guide (PDF): EC2 vs ECS Fargate, learning path + to-do
 │   ├── architecture/            overview, embedding flow, search flow, security, observability
 │   ├── decisions/               ADR-001 pgvector, ADR-002 embedding model, ADR-003 repo structure
 │   ├── interview/               embeddings, vector databases
 │   └── weekly-notes/            your learning log
 ├── infrastructure/docker/       files mounted by Compose (init + verification SQL)
+├── infrastructure/aws/          Terraform for AWS (ec2/, ecs/) + parked CI workflows (not yet applied)
 ├── postman/                     API collection
 └── services/ai-engineering-api/ Spring Boot service (modular monolith)
 ```
@@ -115,6 +117,7 @@ The structure follows the original plan with two deliberate changes, explained i
 3. [02-vector-databases/pgvector/README.md](02-vector-databases/pgvector/README.md): the SQL Spring AI generates, plus measured retrieval results
 4. [01-embeddings/notes/developer-notes.md](01-embeddings/notes/developer-notes.md): the "why" questions
 5. [docs/interview/](docs/interview/): practise explaining it
+6. [docs/aws-deployment/](docs/aws-deployment/README.md): how to deploy this on AWS (learning path + to-do checklist)
 
 ## Known limitations (milestone 1)
 

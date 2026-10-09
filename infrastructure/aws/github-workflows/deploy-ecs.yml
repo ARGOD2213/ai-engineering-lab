@@ -1,0 +1,130 @@
+# .github/workflows/deploy-ecs.yml - test -> build image -> push to ECR -> roll ECS service
+# -> publish React to S3 -> invalidate CloudFront. AWS access via OIDC (no stored keys).
+name: deploy-ecs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {} # manual re-deploy, e.g. after a Terraform task-definition change
+
+permissions:
+  id-token: write # required to request the GitHub OIDC token
+  contents: read
+
+concurrency:
+  group: deploy-prod # never run two production deploys at once
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: ai-lab/api
+  ECS_CLUSTER: ai-lab-prod
+  ECS_SERVICE: ai-lab-prod-api
+  TASK_FAMILY: ai-lab-prod-api
+  CONTAINER_NAME: api
+  API_DIR: services/ai-engineering-api
+  WEB_DIR: frontend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Unit and integration tests
+        working-directory: ${{ env.API_DIR }}
+        run: ./mvnw -B verify
+
+  deploy-api:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production # must match the IAM trust policy "sub" condition
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }} # terraform output github_deploy_role_arn
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image (tag = git SHA, immutable)
+        id: image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE="$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          if aws ecr describe-images --repository-name "$ECR_REPOSITORY" \
+               --image-ids imageTag="$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "Image $IMAGE already exists (re-run); skipping build"
+          else
+            docker build -t "$IMAGE" "$API_DIR"
+            docker push "$IMAGE"
+          fi
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch the latest task definition (Terraform owns its shape)
+        run: |
+          aws ecs describe-task-definition --task-definition "$TASK_FAMILY" \
+            --query taskDefinition > taskdef.json
+
+      - name: Swap in the new image
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: taskdef.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.image.outputs.image }}
+
+      - name: Register revision and roll the service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
+          wait-for-service-stability: true # fails the job if ECS rolls back
+
+  deploy-web:
+    needs: deploy-api # ship the UI only after the API it calls is healthy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ env.WEB_DIR }}/package-lock.json
+      - name: Build React (API URL is baked in at build time)
+        working-directory: ${{ env.WEB_DIR }}
+        env:
+          VITE_API_BASE_URL: https://api.example.com # REPLACE
+        run: |
+          npm ci
+          npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Upload to S3 and invalidate CloudFront
+        env:
+          BUCKET: ${{ vars.FRONTEND_BUCKET }}             # terraform output frontend_bucket
+          DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          # Hashed assets: cache for a year. index.html: always revalidate.
+          aws s3 sync "$WEB_DIR/dist" "s3://$BUCKET" --delete \
+            --exclude index.html --cache-control "public,max-age=31536000,immutable"
+          aws s3 cp "$WEB_DIR/dist/index.html" "s3://$BUCKET/index.html" \
+            --cache-control "no-cache"
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" \
+            --paths "/index.html"

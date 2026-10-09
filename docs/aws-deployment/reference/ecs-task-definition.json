@@ -1,0 +1,45 @@
+{
+  "family": "ai-lab-prod-api",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "1024",
+  "memory": "2048",
+  "runtimePlatform": { "operatingSystemFamily": "LINUX", "cpuArchitecture": "X86_64" },
+  "executionRoleArn": "arn:aws:iam::111122223333:role/ai-lab-prod-api-execution-role",
+  "taskRoleArn": "arn:aws:iam::111122223333:role/ai-lab-prod-api-task-role",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "111122223333.dkr.ecr.us-east-1.amazonaws.com/ai-lab/api:0123abc",
+      "essential": true,
+      "portMappings": [{ "containerPort": 8080, "protocol": "tcp" }],
+      "environment": [
+        { "name": "SERVER_PORT", "value": "8080" },
+        { "name": "POSTGRES_HOST", "value": "ai-lab-prod-db.abcdefghijkl.us-east-1.rds.amazonaws.com" },
+        { "name": "POSTGRES_PORT", "value": "5432" },
+        { "name": "POSTGRES_DB", "value": "ai_lab" }
+      ],
+      "secrets": [
+        { "name": "POSTGRES_USER",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:111122223333:secret:rds!db-1a2b3c-AbCdEf:username::" },
+        { "name": "POSTGRES_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:111122223333:secret:rds!db-1a2b3c-AbCdEf:password::" },
+        { "name": "OPENAI_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:111122223333:secret:ai-lab/prod/api-GhIjKl:OPENAI_API_KEY::" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"],
+        "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 120
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ai-lab-prod-api",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "api"
+        }
+      },
+      "stopTimeout": 30
+    }
+  ]
+}

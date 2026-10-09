@@ -1,0 +1,101 @@
+# .github/workflows/deploy-ec2.yml - test + package jar -> upload to S3 -> move the SSM
+# release pointer -> ASG instance refresh -> publish React. AWS access via OIDC.
+name: deploy-ec2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Existing release ID (git SHA) to roll back to. Empty = build HEAD."
+        required: false
+        default: ""
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ASG_NAME: ai-lab-prod-api-asg
+  RELEASE_PARAM: /ai-lab/prod/api/release
+  API_DIR: services/ai-engineering-api
+  WEB_DIR: frontend
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    env:
+      ARTIFACT_BUCKET: ${{ vars.ARTIFACT_BUCKET }} # terraform output artifact_bucket
+      ROLLBACK_TO: ${{ inputs.release }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        if: env.ROLLBACK_TO == ''
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Test and package
+        if: env.ROLLBACK_TO == ''
+        working-directory: ${{ env.API_DIR }}
+        run: |
+          ./mvnw -B verify
+          cp target/*.jar "$GITHUB_WORKSPACE/app.jar"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy new release
+        if: env.ROLLBACK_TO == ''
+        run: infrastructure/aws/ec2/scripts/deploy-release.sh "$GITHUB_SHA" app.jar
+
+      - name: Roll back to an existing release
+        if: env.ROLLBACK_TO != ''
+        run: infrastructure/aws/ec2/scripts/deploy-release.sh "$ROLLBACK_TO"
+
+  deploy-web:
+    needs: deploy-api
+    if: inputs.release == '' # a backend rollback does not rebuild the UI
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ env.WEB_DIR }}/package-lock.json
+      - name: Build React
+        working-directory: ${{ env.WEB_DIR }}
+        env:
+          VITE_API_BASE_URL: https://api.example.com # REPLACE
+        run: |
+          npm ci
+          npm run build
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Upload to S3 and invalidate CloudFront
+        env:
+          BUCKET: ${{ vars.FRONTEND_BUCKET }}
+          DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          aws s3 sync "$WEB_DIR/dist" "s3://$BUCKET" --delete \
+            --exclude index.html --cache-control "public,max-age=31536000,immutable"
+          aws s3 cp "$WEB_DIR/dist/index.html" "s3://$BUCKET/index.html" \
+            --cache-control "no-cache"
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" \
+            --paths "/index.html"

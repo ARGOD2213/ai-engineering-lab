@@ -1,0 +1,19 @@
+# terraform.tfvars.example - copy to terraform.tfvars (git-ignored) and edit.
+# Contains NO secrets: passwords live in Secrets Manager, never in tfvars.
+
+project            = "ai-lab"
+environment        = "prod"
+aws_region         = "us-east-1"
+domain_name        = "example.com"              # REPLACE: your Route 53 hosted zone
+github_repo        = "OWNER/ai-engineering-lab" # REPLACE
+alert_email        = "oncall@example.com"       # REPLACE or leave ""
+single_nat_gateway = true
+
+db_instance_class = "db.t4g.medium" # illustrative
+db_multi_az       = true
+
+instance_type        = "t3.medium" # illustrative
+asg_min_size         = 2
+asg_desired_capacity = 2
+asg_max_size         = 10
+initial_release      = "0123abc" # REPLACE: release you uploaded in the bootstrap step

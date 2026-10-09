@@ -1,0 +1,13 @@
+# .dockerignore - keeps the build context small and secrets out of image layers.
+target/
+.git
+.gitignore
+.idea/
+.vscode/
+*.iml
+*.log
+.env
+.env.*
+requests.http
+Dockerfile
+.dockerignore

@@ -1,0 +1,126 @@
+#!/bin/bash
+# user-data.sh.tftpl - rendered by Terraform templatefile() into the launch template.
+# cloud-init runs it ONCE, as root, on the first boot of every new instance.
+# Terraform fills every dollar-brace placeholder; a doubled dollar sign ($$) escapes a literal one.
+set -euo pipefail
+exec > >(tee -a /var/log/user-data.log) 2>&1
+echo "user-data start: $(date -Is)"
+
+# 1. OS packages (Amazon Linux 2023 already ships the AWS CLI v2 and the SSM agent).
+dnf install -y java-21-amazon-corretto-headless amazon-cloudwatch-agent jq
+
+# 2. Service account and directories.
+id ailab >/dev/null 2>&1 || useradd --system --home-dir /opt/ai-lab --shell /sbin/nologin ailab
+install -d -o ailab -g ailab -m 0750 /opt/ai-lab /opt/ai-lab/releases
+install -d -o ailab -g ailab -m 0750 /var/log/ai-lab
+install -d -m 0755 /etc/ai-lab
+
+# 3. Deployment settings (non-secret) used by the helper scripts.
+cat > /etc/ai-lab/deploy.env <<CONF
+AWS_REGION=${aws_region}
+ARTIFACT_BUCKET=${artifact_bucket}
+RELEASE_PARAM=${release_param}
+DB_SECRET_ARN=${db_secret_arn}
+APP_SECRET_ARN=${app_secret_arn}
+CONF
+
+# 4. Application runtime configuration (non-secret).
+cat > /etc/ai-lab/api.env <<CONF
+SERVER_PORT=${api_port}
+POSTGRES_HOST=${db_host}
+POSTGRES_PORT=5432
+POSTGRES_DB=${db_name}
+CONF
+chmod 0644 /etc/ai-lab/*.env
+
+# 5. Secret fetcher: runs before every service start, writes a root-only tmpfs file.
+cat > /usr/local/bin/ai-lab-fetch-secrets <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+source /etc/ai-lab/deploy.env
+install -d -m 0700 /run/ai-lab
+umask 077
+db_json=$(aws secretsmanager get-secret-value --region "$AWS_REGION" \
+  --secret-id "$DB_SECRET_ARN" --query SecretString --output text)
+app_json=$(aws secretsmanager get-secret-value --region "$AWS_REGION" \
+  --secret-id "$APP_SECRET_ARN" --query SecretString --output text)
+{
+  echo "POSTGRES_USER=$(jq -r .username <<<"$db_json")"
+  echo "POSTGRES_PASSWORD=$(jq -r .password <<<"$db_json")"
+  jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$app_json"
+} > /run/ai-lab/secrets.env.tmp
+mv /run/ai-lab/secrets.env.tmp /run/ai-lab/secrets.env
+SCRIPT
+
+# 6. Release installer: downloads the jar named by the SSM release pointer.
+cat > /usr/local/bin/ai-lab-deploy <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+source /etc/ai-lab/deploy.env
+release=$(aws ssm get-parameter --region "$AWS_REGION" --name "$RELEASE_PARAM" \
+  --query Parameter.Value --output text)
+dest="/opt/ai-lab/releases/$release"
+install -d -o ailab -g ailab -m 0750 "$dest"
+aws s3 cp --region "$AWS_REGION" "s3://$ARTIFACT_BUCKET/api/$release/app.jar" "$dest/app.jar"
+chown ailab:ailab "$dest/app.jar"
+ln -sfn "$dest" /opt/ai-lab/current
+systemctl daemon-reload
+systemctl enable ai-lab-api
+systemctl restart ai-lab-api
+echo "deployed release $release"
+SCRIPT
+chmod 0750 /usr/local/bin/ai-lab-fetch-secrets /usr/local/bin/ai-lab-deploy
+
+# 7. systemd unit (content comes from templates/ai-lab-api.service).
+cat > /etc/systemd/system/ai-lab-api.service <<'UNIT'
+${systemd_unit}
+UNIT
+
+# 8. Log rotation for the file the unit appends to.
+cat > /etc/logrotate.d/ai-lab <<'ROTATE'
+/var/log/ai-lab/*.log {
+  daily
+  rotate 7
+  compress
+  missingok
+  copytruncate
+}
+ROTATE
+
+# 9. CloudWatch agent: ship app + bootstrap logs, collect memory and disk metrics.
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<'CWA'
+{
+  "agent": { "metrics_collection_interval": 60, "run_as_user": "root" },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          { "file_path": "/var/log/ai-lab/api.log",
+            "log_group_name": "${log_group}", "log_stream_name": "{instance_id}/app" },
+          { "file_path": "/var/log/user-data.log",
+            "log_group_name": "${log_group}", "log_stream_name": "{instance_id}/user-data" }
+        ]
+      }
+    }
+  },
+  "metrics": {
+    "namespace": "CWAgent",
+    "append_dimensions": {
+      "AutoScalingGroupName": "$${aws:AutoScalingGroupName}",
+      "InstanceId": "$${aws:InstanceId}"
+    },
+    "aggregation_dimensions": [["AutoScalingGroupName"]],
+    "metrics_collected": {
+      "mem": { "measurement": ["mem_used_percent"] },
+      "disk": { "measurement": ["used_percent"], "resources": ["/"] }
+    }
+  }
+}
+CWA
+/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s \
+  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+# 10. Install and start the current release. The ALB health check decides when the
+#     instance receives traffic; the ASG replaces it if it never becomes healthy.
+/usr/local/bin/ai-lab-deploy
+echo "user-data done: $(date -Is)"

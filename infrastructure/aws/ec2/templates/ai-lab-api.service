@@ -1,0 +1,39 @@
+# /etc/systemd/system/ai-lab-api.service - keeps the API process running on the instance.
+# Installed by user-data. Secrets are fetched at every (re)start into a tmpfs file.
+[Unit]
+Description=ai-lab API
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=ailab
+Group=ailab
+WorkingDirectory=/opt/ai-lab/current
+
+# Non-secret config (written once by user-data) + secrets (written by ExecStartPre).
+EnvironmentFile=/etc/ai-lab/api.env
+EnvironmentFile=-/run/ai-lab/secrets.env
+# "+" runs this one command as root so it can write /run/ai-lab with mode 0600.
+ExecStartPre=+/usr/local/bin/ai-lab-fetch-secrets
+
+ExecStart=/usr/bin/java -XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError -jar /opt/ai-lab/current/app.jar
+# JVM exits with 143 after SIGTERM: treat as a clean stop.
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+StandardOutput=append:/var/log/ai-lab/api.log
+StandardError=append:/var/log/ai-lab/api.log
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/ai-lab
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

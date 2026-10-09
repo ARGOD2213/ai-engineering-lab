@@ -42,3 +42,14 @@ CLAUDE.md
 
 
 
+
+# --- Terraform (infrastructure/aws) -------------------------------------------
+# State and saved plans can contain sensitive values; tfvars holds environment values.
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+tfplan
+*.tfplan
+crash.log
+# .terraform.lock.hcl IS committed (provider version pins).
