@@ -24,6 +24,12 @@ spring:
       maximum-pool-size: 5
       connection-timeout: 5000 # milliseconds
 
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema. Hibernate only checks that entities match the tables; it never creates them.
+      ddl-auto: validate
+
   flyway:
     # Versioned SQL in src/main/resources/db/migration owns the schema (extension, tables, indexes).
     enabled: true

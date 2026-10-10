@@ -54,3 +54,37 @@ Content-Type: application/json
 
 ### 8. Model and vector table in use
 GET {{baseUrl}}/actuator/info
+
+### ---------------------------------------------------------------------------
+### Employee API (plain CRUD, PostgreSQL)
+### ---------------------------------------------------------------------------
+
+### E1. Create an employee -> 201 Created + Location header
+POST {{baseUrl}}/api/employees
+Content-Type: application/json
+
+{"name": "Asha Rao", "department": "Engineering", "email": "asha.rao@example.com"}
+
+### E2. Retrieve all employees -> 200 OK
+GET {{baseUrl}}/api/employees
+
+### E3. Retrieve one employee (use the id returned by E1) -> 200 OK
+GET {{baseUrl}}/api/employees/1
+
+### E4. Update an employee -> 200 OK
+PUT {{baseUrl}}/api/employees/1
+Content-Type: application/json
+
+{"name": "Asha Rao", "department": "Platform", "email": "asha.rao@example.com"}
+
+### E5. Delete an employee -> 204 No Content
+DELETE {{baseUrl}}/api/employees/1
+
+### E6. Request a nonexistent employee -> 404 Not Found
+GET {{baseUrl}}/api/employees/999999
+
+### E7. Invalid body (blank name, bad email, missing department) -> 400 Bad Request
+POST {{baseUrl}}/api/employees
+Content-Type: application/json
+
+{"name": "", "email": "not-an-email"}

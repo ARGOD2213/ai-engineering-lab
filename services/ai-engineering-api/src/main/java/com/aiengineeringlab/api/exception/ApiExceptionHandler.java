@@ -1,5 +1,6 @@
 package com.aiengineeringlab.api.exception;
 
+import com.aiengineeringlab.api.employee.EmployeeNotFoundException;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -63,6 +64,14 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         countError("not_found");
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Document not found");
+        return problem;
+    }
+
+    @ExceptionHandler(EmployeeNotFoundException.class)
+    ProblemDetail handleEmployeeNotFound(EmployeeNotFoundException ex) {
+        countError("not_found");
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Employee not found");
         return problem;
     }
 

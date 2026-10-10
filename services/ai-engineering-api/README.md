@@ -85,6 +85,22 @@ curl -s -X POST localhost:8080/api/search -H 'Content-Type: application/json' \
   -d '{"query": "leave", "topK": 5, "filterExpression": "department == '\''HR'\'' && documentType == '\''POLICY'\''"}'
 ```
 
+## Employee API (plain CRUD)
+
+A conventional controller → service → repository → PostgreSQL resource in `com.aiengineeringlab.api.employee`
+(JPA/Hibernate; table created by Flyway `V5__create_employees.sql`). It is the baseline for later exercises.
+
+| Method | Path | Success | Errors |
+|---|---|---|---|
+| POST | `/api/employees` | `201` + `Location` + body | `400` invalid body |
+| GET | `/api/employees` | `200` list | |
+| GET | `/api/employees/{id}` | `200` | `404` unknown id |
+| PUT | `/api/employees/{id}` | `200` updated employee | `400` invalid body, `404` unknown id |
+| DELETE | `/api/employees/{id}` | `204` | `404` unknown id |
+
+Body: `{"name": "Asha", "department": "Engineering", "email": "asha@example.com"}` (all three required, `email` must be valid).
+Ready-made calls are in [`requests.http`](requests.http) (section "Employee API").
+
 ## Tests
 
 ```bash
@@ -120,6 +136,7 @@ Values come from real environment variables or from the repository's `.env` file
 
 ```text
 src/main/java/com/aiengineeringlab/api/
+├── employee/        Employee (entity), EmployeeRepository, EmployeeService, EmployeeController
 ├── controller/      EmbeddingController, DocumentController, SearchController, dto/ (validated requests)
 ├── service/         EmbeddingService, DocumentIngestionService, SemanticSearchService, TextSimilarity
 ├── repository/      DocumentRepository (read side, plain SQL)
@@ -129,7 +146,7 @@ src/main/java/com/aiengineeringlab/api/
 src/main/resources/
 ├── application.yml            local model defaults
 ├── application-openai.yml     OpenAI profile
-└── db/migration/              V1 extension, V2 MiniLM table, V3 OpenAI table
+└── db/migration/              V1 extension, V2 MiniLM table, V3 OpenAI table, V5 employees
 ```
 
 ## Troubleshooting
